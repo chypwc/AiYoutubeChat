@@ -1,0 +1,11 @@
+services:
+  db:
+    hostname: 127.0.0.1 # Optional: sets the internal hostname (not usually needed)
+    image: pgvector/pgvector:pg16 # Pulls the pgvector-enabled PostgreSQL 16 image
+    ports:
+      - 5432:5432 # Maps container port 5432 to your host port 5432
+    restart: always # Ensures the container always restarts if it crashes
+    environment:
+      - POSTGRES_DB=vector_db # Creates a database named vector_db
+      - POSTGRES_USER=postgres # Creates a user 'postgres'
+      - POSTGRES_PASSWORD=postgres # Sets the password for that user

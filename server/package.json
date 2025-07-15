@@ -12,10 +12,13 @@
   "description": "",
   "dependencies": {
     "@langchain/anthropic": "^0.3.24",
+    "@langchain/community": "^0.3.48",
     "@langchain/core": "^0.3.62",
     "@langchain/langgraph": "^0.3.8",
     "@langchain/openai": "^0.5.18",
     "langchain": "^0.3.29",
+    "pg": "^8.16.3",
+    "uuid": "^11.1.0",
     "zod": "^3.25.76"
   }
 }

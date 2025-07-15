@@ -20,7 +20,7 @@ await addYTVideoToVectorStore(data[1]);
 // async : Enabling use of await inside the function
 const retrievalTool = tool(
   async ({ query }, { configurable: { video_id } }) => {
-    // console.log("Retrieving docs for query --------------------------");
+    console.log("Retrieving docs for query --------------------------");
 
     // Returns the top 5 most similar chunks
     // Performs semantic search: it embeds your query and compares it to the stored chunks using cosine similarity
@@ -32,7 +32,8 @@ const retrievalTool = tool(
     const docsRetrieved = await vectorStore.similaritySearch(
       query,
       5,
-      (doc) => String(doc.metadata.video_id) === String(video_id)
+      { video_id }
+      // (doc) => String(doc.metadata.video_id) === String(video_id) // MemoryVectorStore requires a function filter
     );
 
     // console.log("docsRetrieved: ", docsRetrieved);
