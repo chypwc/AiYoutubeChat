@@ -20,7 +20,7 @@ await addYTVideoToVectorStore(data[1]);
 // async : Enabling use of await inside the function
 const retrievalTool = tool(
   async ({ query }, { configurable: { video_id } }) => {
-    console.log("Retrieving docs for query --------------------------");
+    // console.log("Retrieving docs for query --------------------------");
 
     // Returns the top 5 most similar chunks
     // Performs semantic search: it embeds your query and compares it to the stored chunks using cosine similarity
@@ -65,45 +65,31 @@ const agent = createReactAgent({
   checkpointer,
 });
 
-//  testing the agent
-// const video_id = "XIccFOAn7EE";
-const video_id = "Q7mS1VHm3Yw";
+// //  testing the agent
+// // const video_id = "XIccFOAn7EE";
+// const video_id = "Q7mS1VHm3Yw";
 
-// console.log("Q1: How many strikes (Ks) did the pitcher throw in the video?");
-console.log(
-  "Q1: What will people learn from the video based on the transcript?"
-);
-// The await keyword pauses the script until the agent gets a response back from the Anthropic API
-const results = await agent.invoke(
-  {
-    messages: [
-      {
-        role: "user",
-        content:
-          "What will people learn from the video based on the transcript?",
-      },
-    ],
-  },
-  { configurable: { thread_id: 1, video_id } }
-);
-
-// .at(-1) always retrieves the last element
-// ? (The Optional Chaining Operator)
-// It checks if the value to its left (results.messages.at(-1)) is null or undefined.
-console.log(results.messages.at(-1)?.content);
-
-// console.log("Q2: What kind of pitch did the pitcher throw?");
+// // console.log("Q1: How many strikes (Ks) did the pitcher throw in the video?");
+// console.log(
+//   "Q1: What will people learn from the video based on the transcript?"
+// );
 // // The await keyword pauses the script until the agent gets a response back from the Anthropic API
-// const results2 = await agent.invoke(
+// const results = await agent.invoke(
 //   {
 //     messages: [
 //       {
 //         role: "user",
 //         content:
-//           "What kind of pitch did the pitcher throw (based on the video transcript)?",
+//           "What will people learn from the video based on the transcript?",
 //       },
 //     ],
 //   },
 //   { configurable: { thread_id: 1, video_id } }
 // );
-// console.log(results2.messages.at(-1)?.content);
+
+// // .at(-1) always retrieves the last element
+// // ? (The Optional Chaining Operator)
+// // It checks if the value to its left (results.messages.at(-1)) is null or undefined.
+// console.log(results.messages.at(-1)?.content);
+
+export { agent };
