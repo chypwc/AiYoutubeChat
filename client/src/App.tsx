@@ -1,31 +1,42 @@
+// Import React hooks and styles
 import { useState, useRef, useEffect } from 'react';
 import './index.css';
 
+// Define the shape of a chat message
 interface Message {
-  id: number;
-  text: string;
-  isUser: boolean;
+  id: number; // Unique identifier for the message
+  text: string; // The message content
+  isUser: boolean; // True if sent by user, false if by AI
 }
 
 function App() {
+  // State to hold all chat messages
   const [messages, setMessages] = useState<Message[]>([]);
+  // State for the current input in the textarea
   const [inputText, setInputText] = useState('');
+  // State to indicate if the AI is generating a response
   const [isLoading, setIsLoading] = useState(false);
+  // State to keep track of the current chat thread (for context)
   const [threadId, setThreadId] = useState<number>(Date.now());
+  // Ref to scroll to the bottom of the chat
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to the bottom whenever messages or loading state changes
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // Helper to scroll to the latest message
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Handle changes in the textarea input
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputText(e.target.value);
   };
 
+  // Handle Enter key to send message (Shift+Enter for newline)
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -33,47 +44,58 @@ function App() {
     }
   };
 
+  // Send the user's message to the backend and handle the response
   const sendMessage = async () => {
+    // Prevent sending empty messages or sending while loading
     if (inputText.trim() === '' || isLoading) return;
 
+    // Create the user message object
     const userMessage = {
       id: Date.now(),
       text: inputText.trim(),
       isUser: true,
     };
 
+    // Add the user message to the chat
     setMessages((prev) => [...prev, userMessage]);
-    setInputText('');
-    setIsLoading(true);
+    setInputText(''); // Clear input
+    setIsLoading(true); // Show loading indicator
 
     try {
+      // API endpoint for the backend
       const apiUrl = 'http://localhost:3000';
+      // Send POST request to /generate endpoint
       const response = await fetch(`${apiUrl}/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: userMessage.text,
-          video_id: 'Q7mS1VHm3Yw',
-          thread_id: threadId,
+          query: userMessage.text, // User's question
+          video_id: 'Q7mS1VHm3Yw', // Hardcoded YouTube video ID
+          thread_id: threadId, // Current chat thread
         }),
       });
 
+      // If response is not OK, throw error
       if (!response.ok) {
         throw new Error('Failed to get response');
       }
 
+      // Get the AI's response as plain text
       const data = await response.text();
 
+      // Create the AI message object
       const aiMessage = {
         id: Date.now(),
         text: data,
         isUser: false,
       };
 
+      // Add the AI message to the chat
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
+      // Handle errors (e.g., network issues)
       console.error('Error:', error);
       const errorMessage = {
         id: Date.now(),
@@ -82,21 +104,25 @@ function App() {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Hide loading indicator
     }
   };
 
+  // Reset the chat and start a new thread
   const resetChat = () => {
-    setMessages([]);
-    setThreadId(Date.now());
+    setMessages([]); // Clear all messages
+    setThreadId(Date.now()); // Generate a new thread ID
   };
 
+  // Main UI rendering
   return (
     <div className='chat-root'>
       <div className='chat-container'>
+        {/* Header with title and reset button */}
         <header className='chat-header'>
           <h1>AI Chat with Youtube Video</h1>
           <button className='reset-button' onClick={resetChat}>
+            {/* SVG icon for reset */}
             <svg
               width='16'
               height='16'
@@ -113,12 +139,15 @@ function App() {
           </button>
         </header>
 
+        {/* Messages area */}
         <div className='messages-container'>
+          {/* Show empty state if no messages */}
           {messages.length === 0 ? (
             <div className='empty-state'>
               <p>Start your conversation with the AI</p>
             </div>
           ) : (
+            // Render each message
             messages.map((message) => (
               <div
                 key={message.id}
@@ -133,6 +162,7 @@ function App() {
               </div>
             ))
           )}
+          {/* Show loading indicator when waiting for AI response */}
           {isLoading && (
             <div className='message ai-message'>
               <div className='message-avatar'>AI</div>
@@ -143,9 +173,11 @@ function App() {
               </div>
             </div>
           )}
+          {/* Dummy div to scroll to bottom */}
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Input area for typing messages */}
         <div className='input-container'>
           <textarea
             value={inputText}
@@ -160,6 +192,7 @@ function App() {
             onClick={sendMessage}
             disabled={inputText.trim() === '' || isLoading}
           >
+            {/* SVG icon for send */}
             <svg
               width='24'
               height='24'
@@ -179,4 +212,5 @@ function App() {
   );
 }
 
+// Export the App component as default
 export default App;

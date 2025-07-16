@@ -11,14 +11,31 @@ const embeddings = new OpenAIEmbeddings({
   model: "text-embedding-3-small",
 });
 
+//  Local Vector Store
+// const config = {
+//   postgresConnectionOptions: {
+//     type: "postgres",
+//     host: "127.0.0.1",
+//     port: 5432, // Note: This must match your Docker port
+//     user: "postgres",
+//     password: "postgres",
+//     database: "vector_db",
+//   },
+//   tableName: "transcripts",
+//   columns: {
+//     idColumnName: "id",
+//     vectorColumnName: "vector",
+//     contentColumnName: "content",
+//     metadataColumnName: "metadata",
+//   },
+//   // supported distance strategies: cosine (default), innerProduct, or euclidean
+//   distanceStrategy: "cosine",
+// };
+
+// neon vector store
 const config = {
   postgresConnectionOptions: {
-    type: "postgres",
-    host: "127.0.0.1",
-    port: 5432, // Note: This must match your Docker port
-    user: "postgres",
-    password: "postgres",
-    database: "vector_db",
+    connectionString: process.env.DB_URL,
   },
   tableName: "transcripts",
   columns: {
