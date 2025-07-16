@@ -63,7 +63,7 @@ function App() {
 
     try {
       // API endpoint for the backend
-      const apiUrl = 'http://localhost:3000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       // Send POST request to /generate endpoint
       const response = await fetch(`${apiUrl}/generate`, {
         method: 'POST',
@@ -72,7 +72,6 @@ function App() {
         },
         body: JSON.stringify({
           query: userMessage.text, // User's question
-          video_id: 'Q7mS1VHm3Yw', // Hardcoded YouTube video ID
           thread_id: threadId, // Current chat thread
         }),
       });
@@ -144,7 +143,7 @@ function App() {
           {/* Show empty state if no messages */}
           {messages.length === 0 ? (
             <div className='empty-state'>
-              <p>Start your conversation with the AI</p>
+              <p>Start your conversation with the AI. Please provide a youtube video url.</p>
             </div>
           ) : (
             // Render each message

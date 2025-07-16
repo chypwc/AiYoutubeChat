@@ -1,29 +1,23 @@
-// npm i express cors @types/express
 import express from "express";
 import cors from "cors";
 import { agent } from "./agent.js";
+import { addYTVideoToVectorStore } from "./embeddings.js";
+
+const port = process.env.PORT || 3000;
 
 const app = express();
-const PORT = 3000;
 
-app.use(express.json()); // to parse JSON bodies
+app.use(express.json({ limit: "200mb" }));
 app.use(cors());
 
 app.get("/", (req, res) => {
-  res.send("Hello World");
+  res.send("Hello World!");
 });
 
-// curl -X POST http://localhost:3000/generate \
-// -H "Content-Type: application/json" -d '{
-// "query": "What will people learn from the video based on the transcript?",
-// "video_id": "Q7mS1VHm3Yw",
-// "thread_id": 1}'
 app.post("/generate", async (req, res) => {
-  const { query, video_id, thread_id } = req.body;
-  console.log("query: ", query);
-  console.log("video_id: ", video_id);
+  const { query, thread_id } = req.body;
+  console.log(query, thread_id);
 
-  // The await keyword pauses the script until the agent gets a response back from the Anthropic API
   const results = await agent.invoke(
     {
       messages: [
@@ -33,17 +27,31 @@ app.post("/generate", async (req, res) => {
         },
       ],
     },
-    { configurable: { thread_id, video_id } }
+    { configurable: { thread_id } }
   );
 
-  // .at(-1) always retrieves the last element
-  // ? (The Optional Chaining Operator)
-  // It checks if the value to its left (results.messages.at(-1)) is null or undefined.
-  const response = results.messages.at(-1)?.content;
-
-  res.send(response);
+  res.send(results.messages.at(-1)?.content);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.post("/webhook", async (req, res) => {
+  console.log("Webhook received:", req.body);
+  try {
+    await Promise.all(
+      req.body.map(async (video) => addYTVideoToVectorStore(video))
+    );
+    res.send("OK");
+  } catch (err) {
+    console.error("Error processing webhook:", err);
+    res.status(500).send("Error");
+  }
 });
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+// curl -X POST http://localhost:3000/generate \
+// -H "Content-Type: application/json" -d '{
+// "query": "What will people learn from the video based on the transcript?",
+// "video_id": "Q7mS1VHm3Yw",
+// "thread_id": 1}'

@@ -1,95 +1,92 @@
-// npm install @langchain/langgraph @langchain/core @langchain/anthropic @langchain/openai zod
-// npm i langchain
-// node --env-file=.env agent.js
 import { ChatAnthropic } from "@langchain/anthropic";
-// A ReAct agent is a type of agent that can Reason about a task and then Act to accomplish it
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { MemorySaver } from "@langchain/langgraph";
 
 import { vectorStore, addYTVideoToVectorStore } from "./embeddings.js";
-
 import data from "./data.js";
+import { triggerYoutubeVideoScrape } from "./brightdata.js";
 
-await addYTVideoToVectorStore(data[0]);
-await addYTVideoToVectorStore(data[1]);
+// await addYTVideoToVectorStore(data[0]);
+// await addYTVideoToVectorStore(data[1]);
 
-// retrieval tool
-// async : Enabling use of await inside the function
-const retrievalTool = tool(
-  async ({ query }, { configurable: { video_id } }) => {
-    // console.log("Retrieving docs for query --------------------------");
+const triggerYoutubeVideoScrapeTool = tool(
+  async ({ url }) => {
+    console.log("Triggering youtube video scrape", url);
 
-    // Returns the top 5 most similar chunks
-    // Performs semantic search: it embeds your query and compares it to the stored chunks using cosine similarity
-    // {
-    //   pageContent: "Yamamoto threw 50 strikes...",
-    //   metadata: { video_id: "abc123" }
-    // }
+    const snapshotId = await triggerYoutubeVideoScrape(url);
 
-    const docsRetrieved = await vectorStore.similaritySearch(
-      query,
-      5,
-      { video_id }
-      // (doc) => String(doc.metadata.video_id) === String(video_id) // MemoryVectorStore requires a function filter
-    );
+    console.log("Youtube video scrape triggered", snapshotId);
+    return snapshotId;
+  },
+  {
+    name: "triggerYoutubeVideoScrape",
+    description: `
+    Trigger the scraping of a youtube video using the url. 
+    The tool start a scraping job, that usually takes around 7 seconds
+    The tool will return a snapshot/job id, that can be used to check the status of the scraping job
+    Before calling this tool, make sure that it is not already in the vector store
+  `,
+    schema: z.object({
+      url: z.string(),
+    }),
+  }
+);
+// retrieveal tool
+const retrieveTool = tool(
+  async ({ query, video_id }, { configurable: {} }) => {
+    const retrievedDocs = await vectorStore.similaritySearch(query, 3, {
+      video_id,
+    });
 
-    // console.log("docsRetrieved: ", docsRetrieved);
-
-    // Serialize the retrieved chunks into a single string
-    const serializedDocs = docsRetrieved
+    const serializedDocs = retrievedDocs
       .map((doc) => doc.pageContent)
-      .join("\n");
+      .join("\n ");
+
     return serializedDocs;
   },
   {
     name: "retrieve",
-    description: "Retrieve the most relevant chunks from the youtube video",
+    description:
+      "Retrieve the most relevant chunks of text from the transcript for a specific youtube video",
     schema: z.object({
-      query: z.string(), // this tool expects an object with a single string field called query
+      query: z.string(),
+      video_id: z.string().describe("The id of the video to retrieve"),
+    }),
+  }
+);
+
+// retrieveal similar videos tool
+const retrieveSimilarVideosTool = tool(
+  async ({ query }) => {
+    const retrievedDocs = await vectorStore.similaritySearch(query, 3);
+
+    const ids = retrievedDocs.map((doc) => doc.metadata.video_id).join("\n ");
+
+    return ids;
+  },
+  {
+    name: "retrieveSimilarVideos",
+    description: "Retrieve the ids of the most similar videos to the query",
+    schema: z.object({
+      query: z.string(),
     }),
   }
 );
 
 const llm = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+  modelName: "claude-3-7-sonnet-latest",
 });
 
 const checkpointer = new MemorySaver();
 
-const agent = createReactAgent({
+export const agent = createReactAgent({
   llm,
-  tools: [retrievalTool],
+  tools: [
+    retrieveTool,
+    triggerYoutubeVideoScrapeTool,
+    retrieveSimilarVideosTool,
+  ],
   checkpointer,
 });
-
-// //  testing the agent
-// // const video_id = "XIccFOAn7EE";
-// const video_id = "Q7mS1VHm3Yw";
-
-// // console.log("Q1: How many strikes (Ks) did the pitcher throw in the video?");
-// console.log(
-//   "Q1: What will people learn from the video based on the transcript?"
-// );
-// // The await keyword pauses the script until the agent gets a response back from the Anthropic API
-// const results = await agent.invoke(
-//   {
-//     messages: [
-//       {
-//         role: "user",
-//         content:
-//           "What will people learn from the video based on the transcript?",
-//       },
-//     ],
-//   },
-//   { configurable: { thread_id: 1, video_id } }
-// );
-
-// // .at(-1) always retrieves the last element
-// // ? (The Optional Chaining Operator)
-// // It checks if the value to its left (results.messages.at(-1)) is null or undefined.
-// console.log(results.messages.at(-1)?.content);
-
-export { agent };
